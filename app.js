@@ -1,12 +1,13 @@
-function readURL(input) {
-  if (input.files && input.files[0]) {
-    var reader = new FileReader();
-    reader.onload = function (e) {
-      $('#blah')
-        .attr('src', e.target.result)
-        .width(150)
-        .height(200);
-    };
-    reader.readAsDataURL(input.files[0]);
+function readImage(file) {
+  // Check if the file is an image.
+  if (file.type && file.type.indexOf('image') === -1) {
+    console.log('File is not an image.', file.type, file);
+    return;
   }
+
+  const reader = new FileReader();
+  reader.addEventListener('load', (event) => {
+    img.src = event.target.result;
+  });
+  reader.readAsDataURL(file);
 }
