@@ -1,30 +1,58 @@
-let fileInput = document.getElementById('fileinput');
+const qrcode = window.qrcode;
 
-fileInput.addEventListener('change', 
-                           function(ev) {
-  console.log("hi");
-    console.log(ev.target.files);
-  if(ev.target.files) {
-    let file = ev.target.files[0];
-    var reader  = new FileReader();
+const video = document.createElement("video");
+const canvasElement = document.getElementById("qr-canvas");
+const canvas = canvasElement.getContext("2d");
 
-    reader.onloadend = function (e) {
-      var image = new Image();
-      image.src = e.target.result;
-      image.onload = function(ev) {
-        console.log("loading");
-        var canvas = document.getElementById('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height;
-         var ctx = canvas.getContext('2d');
-        ctx.drawImage(image,100,100);
-      }
-    }
-    reader.readAsDataURL(file);
+const qrResult = document.getElementById("qr-result");
+const outputData = document.getElementById("outputData");
+const btnScanQR = document.getElementById("btn-scan-qr");
 
+let scanning = false;
+
+qrcode.callback = res => {
+  if (res) {
+    outputData.innerText = res;
+    scanning = false;
+
+    video.srcObject.getTracks().forEach(track => {
+      track.stop();
+    });
+
+    qrResult.hidden = false;
+    canvasElement.hidden = true;
+    btnScanQR.hidden = false;
   }
-})
+};
 
-var canvas = document.getElementById('canvas');
-var dataURL = canvas.toDataURL();
-document.getElementById('url').innerHTML = dataURL;
+btnScanQR.onclick = () => {
+  navigator.mediaDevices
+    .getUserMedia({ video: { facingMode: "environment" } })
+    .then(function(stream) {
+      scanning = true;
+      qrResult.hidden = true;
+      btnScanQR.hidden = true;
+      canvasElement.hidden = false;
+      video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
+      video.srcObject = stream;
+      video.play();
+      tick();
+      scan();
+    });
+};
+
+function tick() {
+  canvasElement.height = video.videoHeight;
+  canvasElement.width = video.videoWidth;
+  canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+
+  scanning && requestAnimationFrame(tick);
+}
+
+function scan() {
+  try {
+    qrcode.decode();
+  } catch (e) {
+    setTimeout(scan, 300);
+  }
+}
